@@ -37,6 +37,7 @@ func ProdWindowPoints(windowLimit *WindowLimits, output chan WindowPoint) {
 			output <- WindowPoint{X: int(x), Y: int(y), Point: complex(re, im)}
 		}
 	}
+	close(output)
 }
 
 func Converges(mandyVal *complex128, radius float64) bool {

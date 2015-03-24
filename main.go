@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yarbelk/mandy/mandy"
+	"github.com/yarbelk/mandy/lib"
 	"code.google.com/p/goncurses"
 	"log"
 )
@@ -25,7 +25,7 @@ func updateWindow(inputChan chan mandy.PixelValue, window *goncurses.Window, don
 
 func main() {
 	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
-	var outpuChan chan mandy.PixelValue = make(chan mandy.PixelValue)
+	var outputChan chan mandy.PixelValue = make(chan mandy.PixelValue)
 
 	stdscr, err := goncurses.Init()
 	if err != nil {
@@ -43,14 +43,13 @@ func main() {
 	)
 
 	go mandy.ProdWindowPoints(&windowLimits, inputChan)
-	close(inputChan)
 
-	go mandy.Mandy(inputChan, outpuChan, 500, 2.0)
-	close(inputChan)
+	go mandy.Mandy(inputChan, outputChan, 16, 2.0)
 
 	doneChan := make(chan bool)
-	go updateWindow(outpuChan, stdscr, doneChan)
+	go updateWindow(outputChan, stdscr, doneChan)
 	for _ = range doneChan {
 	}
+	close(outputChan)
 	stdscr.Refresh()
 }
