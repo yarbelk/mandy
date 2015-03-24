@@ -94,3 +94,32 @@ func TestGenerateListOfPointPixelPairs(t *testing.T) {
 		}
 	}
 }
+
+func TestMandelbrotOutputFromListOfPointPixelPairs(t *testing.T) {
+	var output PixelValue
+
+	inputChan := make(chan WindowPoint, 4)
+	outputChan := make(chan PixelValue, 4)
+
+	expected := [...]PixelValue{
+		PixelValue{0, 0, 2},
+		PixelValue{1, 0, 10},
+		PixelValue{0, 1, 10},
+		PixelValue{1, 1, 10},
+	}
+
+	inputChan <- WindowPoint{x:0, y:0, point: -1.0 + 1.0i}
+	inputChan <- WindowPoint{x:1, y:0, point: 0.0 + 1.0i}
+	inputChan <- WindowPoint{x:0, y:1, point: -1.0 + 0.0i}
+	inputChan <- WindowPoint{x:1, y:1, point: 0.0 + 0.0i}
+
+	close(inputChan)
+	go Mandy(inputChan, outputChan, 10, 2.0)
+
+	for _, expectedPoint := range expected {
+		output = <-outputChan
+		if (expectedPoint != output) {
+			t.Fatalf("output %v should be %v", output, expectedPoint)
+		}
+	}
+}
