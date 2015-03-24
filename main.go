@@ -7,18 +7,16 @@ import (
 )
 
 func getCharForVal(value int16) goncurses.Char {
-	if val >= 500 {
-		return '*' || goncurses.C_RED
+	if value >= 500 {
+		return '*'
 	} else {
-		return '-' || goncurses.C_BLUE
+		return '-'
 	}
 }
 
 func updateWindow(inputChan chan mandy.PixelValue, window *goncurses.Window, doneChan chan bool) {
-	var ach goncurses.Char
-	var pair int16
 	for input := range inputChan {
-		stdscr.MoveAddChar(input.y, input.x, getCharForVal(input.value))
+		window.MoveAddChar(input.Y, input.X, getCharForVal(input.Value))
 	}
 
 	doneChan <- true
@@ -26,8 +24,8 @@ func updateWindow(inputChan chan mandy.PixelValue, window *goncurses.Window, don
 }
 
 func main() {
-	var inputChan chan WindowPoint = make(chan WindowPoint)
-	var outpuChan chan PixelValue = make(chan PixelValue)
+	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
+	var outpuChan chan mandy.PixelValue = make(chan mandy.PixelValue)
 
 	stdscr, err := goncurses.Init()
 	if err != nil {
@@ -39,20 +37,20 @@ func main() {
 	screenY, screenX := stdscr.MaxYX()
 
 	windowLimits = mandy.NewWindowLimits(
-		screenX, screenY,
+		int32(screenX), int32(screenY),
 		-2.0, 0.5,
 		-1.0, 1.0,
 	)
 
-	go ProdWindowPoints(&windowLimits, inputChan)
+	go mandy.ProdWindowPoints(&windowLimits, inputChan)
 	close(inputChan)
 
-	go Mandy(inputChan, outpuChan, 500, 2.0)
+	go mandy.Mandy(inputChan, outpuChan, 500, 2.0)
 	close(inputChan)
 
 	doneChan := make(chan bool)
 	go updateWindow(outpuChan, stdscr, doneChan)
-	for _ := range doneChan {
+	for _ = range doneChan {
 	}
 	stdscr.Refresh()
 }
