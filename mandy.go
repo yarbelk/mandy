@@ -1,31 +1,19 @@
-package main
+package mandy
 
 import (
-	tb "github.com/nsf/termbox-go"
 	"math/cmplx"
-	"math"
-	"os"
-	"fmt"
-	"sync"
 )
 
-var outputChars [16]tb.Cell = [16]tb.Cell{
-	tb.Cell{'\u2592', 0, tb.ColorBlack},
-	tb.Cell{'\u2592', 1*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 2*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 3*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 4*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 5*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 6*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 7*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 8*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 9*18, tb.ColorBlack},
-	tb.Cell{'\u2592', 10*18, tb.ColorBlack},
-}
-
-type screenPoint struct {
+type WindowPoint struct {
 	x, y int
 	point complex128
+}
+
+type WindowLimits struct {
+	x, y int32
+	xMin, xMax float64
+	yMin, yMax float64
+	xStep, yStep float64
 }
 
 type mandelState struct {
@@ -33,91 +21,41 @@ type mandelState struct {
 	limit int32
 }
 
-func (m* mandelState)convergantPoint(mandyVal *complex128) bool {
-	return (cmplx.Abs(*mandyVal) < m.radius)
+func NewWindowLimits(x, y int32, xMin, xMax, yMin, yMax float64) WindowLimits {
+	var xStep float64 = (xMax - xMin) / float64(x)
+	var yStep float64 = (yMax - yMin) / float64(y)
+	return WindowLimits{x, y, xMin, xMax, yMin, yMax, xStep, yStep}
 }
 
-func (m *mandelState) mandelbrot(pointChan <-chan screenPoint, wg sync.WaitGroup) {
-	defer wg.Done()
-	var distance int32
-	if m.limit <= 0 {
-		os.Exit(1)
-	}
-	
-	for point := range pointChan {
-		var currentVal complex128 = point.point
-		for distance=0; distance <= m.limit; distance++ {
-			currentVal = cmplx.Pow(currentVal, 2.0+0i) + point.point
-			if ! m.convergantPoint(&currentVal) {
-				m.printMandyPoint(distance, point.x, point.y)
-			}
+func ProdWindowPoints(windowLimit *WindowLimits, output chan WindowPoint) {
+	var re, im float64
+	var x, y int32
+	for y=0; y<windowLimit.y; y++ {
+		for x=0; x<windowLimit.x; x++ {
+			re = windowLimit.xMin + float64(x) * windowLimit.xStep
+			im = windowLimit.yMax - float64(y) * windowLimit.yStep
+			output <- WindowPoint{x: int(x), y: int(y), point: complex(re, im)}
 		}
 	}
 }
 
-func (m *mandelState) printMandyPoint(distance int32, x, y int) {
-	i := int32(math.Min(15, math.Max(0, math.Log2(float64(distance)))))
-	cell := outputChars[i]
-	tb.SetCell(x, y, cell.Ch, cell.Fg, cell.Bg)
+func Converges(mandyVal *complex128, radius float64) bool {
+	return (cmplx.Abs(*mandyVal) < radius)
 }
 
-
-func (m *mandelState) setupMandy(termX, termY int) {
-	m.yStep = (m.yMax - m.yMin) / float64(termY)
-	m.xStep = (m.xMax - m.xMin) / float64(termX)
+func Mandelbrot(z, c complex128) complex128 {
+	return cmplx.Pow(z, 2.0+0i) + c
 }
 
-func (mandy *mandelState) mandyRun(termX, termY int) {
-	var yCur, xCur float64
-	var point complex128
-	var wg sync.WaitGroup
-
-	pointChan := make(chan screenPoint)
-	wg.Add(1)
-	go mandy.mandelbrot(pointChan, wg)
-	for y := 0 ; y < termY; y++ {
-		for x := 0 ; x < termX; x++ {
-			xCur = mandy.xMin + (mandy.xStep * float64(x))
-			yCur = mandy.yMin + (mandy.yStep * float64(y))
-			point = complex(xCur, yCur)
-			pointChan <- screenPoint{x: x, y: y, point: point}
-		}
-	}
-	close(pointChan)
-	wg.Wait()
-	tb.SetCursor(0, 0)
-	tb.Flush()
-	tb.HideCursor()
-
-}
-
-func main() {
-	var mandy *mandelState = &mandelState{
-		xMin: -2.0,
-		yMin: -1.0,
-		xMax: 0.5,
-		yMax: 1.0,
-		limit: 4096,
-		radius: 2.3,
-	}
-
-	err := tb.Init()
-	if err != nil {
-		fmt.Fprint(os.Stderr,err.Error())
-		os.Exit(1)
-	}
-	tb.SetOutputMode(tb.Output216)
-	defer tb.Close()
-
-	termX, termY := tb.Size()
-
-	mandy.setupMandy(termX, termY)
-	mandy.mandyRun(termX, termY)
-
-	for  {
-		event := tb.PollEvent()
-		if event.Type == tb.EventKey && event.Key == tb.KeyEsc {
+func MandelbrotRecursionLimit(input complex128, limit int32, radius float64) int32 {
+	var i int32
+	var z, c complex128
+	c = input
+	for i=0; i<limit; i++ {
+		z = Mandelbrot(z,c)
+		if !Converges(&z, radius) {
 			break
 		}
 	}
+	return i
 }
