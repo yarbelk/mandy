@@ -44,7 +44,7 @@ func TestConvergesOpenFunction(t *testing.T) {
 func TestGetRecursionLimitFunction(t *testing.T) {
 	var two complex128 = 1.0 + 1.0i
 	var hits_limit complex128 = 0 + 0i
-	var result int32
+	var result int16
 
 	result = MandelbrotRecursionLimit(two, 10, 2.0)
 	if result != 1 {

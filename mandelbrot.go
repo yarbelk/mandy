@@ -11,7 +11,7 @@ type WindowPoint struct {
 
 type PixelValue struct {
 	x, y int
-	value int32
+	value int16
 }
 
 type WindowLimits struct {
@@ -23,7 +23,7 @@ type WindowLimits struct {
 
 type mandelState struct {
 	radius, xStep, yStep, xMin, yMin, xMax, yMax float64
-	limit int32
+	limit int16
 }
 
 func NewWindowLimits(x, y int32, xMin, xMax, yMin, yMax float64) WindowLimits {
@@ -52,8 +52,8 @@ func Mandelbrot(z, c complex128) complex128 {
 	return cmplx.Pow(z, 2.0+0i) + c
 }
 
-func MandelbrotRecursionLimit(input complex128, limit int32, radius float64) int32 {
-	var i int32
+func MandelbrotRecursionLimit(input complex128, limit int16, radius float64) int16 {
+	var i int16
 	var z, c complex128
 	c = input
 	for i=0; i<limit; i++ {
@@ -65,7 +65,7 @@ func MandelbrotRecursionLimit(input complex128, limit int32, radius float64) int
 	return i
 }
 
-func Mandy(inputChan chan WindowPoint, outputChan chan PixelValue, limit int32, radius float64) {
+func Mandy(inputChan chan WindowPoint, outputChan chan PixelValue, limit int16, radius float64) {
 	for input := range inputChan {
 		outputChan<- PixelValue{
 			x: input.x,
