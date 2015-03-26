@@ -69,4 +69,5 @@ func Mandy(inputChan chan WindowPoint, outputChan chan PixelValue, limit int16, 
 			Value: MandelbrotRecursionLimit(input.Point, limit, radius),
 		}
 	}
+	close(outputChan)
 }

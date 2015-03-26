@@ -3,21 +3,27 @@ package main
 import (
 	"github.com/yarbelk/mandy/lib"
 	"code.google.com/p/goncurses"
-	"log"
+	"fmt"
 )
 
 func getCharForVal(value int16) goncurses.Char {
-	if value >= 500 {
+	if value >= 8 {
 		return '*'
 	} else {
 		return '-'
 	}
 }
 
-func updateWindow(inputChan chan mandy.PixelValue, window *goncurses.Window, doneChan chan bool) {
+func updateWindow(inputChan chan mandy.PixelValue, doneChan chan bool) {
+	var lasty int = 0
 	for input := range inputChan {
-		window.MoveAddChar(input.Y, input.X, getCharForVal(input.Value))
+		if lasty != input.Y {
+			fmt.Println("")
+		}
+		fmt.Printf("%c", getCharForVal(input.Value))
+		lasty = input.Y
 	}
+	fmt.Println("")
 
 	doneChan <- true
 	close(doneChan)
@@ -27,14 +33,8 @@ func main() {
 	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
 	var outputChan chan mandy.PixelValue = make(chan mandy.PixelValue)
 
-	stdscr, err := goncurses.Init()
-	if err != nil {
-		log.Fatal("init:", err)
-	}
-	defer goncurses.End()
-
 	var windowLimits mandy.WindowLimits
-	screenY, screenX := stdscr.MaxYX()
+	screenY, screenX := 60, 160
 
 	windowLimits = mandy.NewWindowLimits(
 		int32(screenX), int32(screenY),
@@ -47,9 +47,7 @@ func main() {
 	go mandy.Mandy(inputChan, outputChan, 16, 2.0)
 
 	doneChan := make(chan bool)
-	go updateWindow(outputChan, stdscr, doneChan)
+	go updateWindow(outputChan, doneChan)
 	for _ = range doneChan {
 	}
-	close(outputChan)
-	stdscr.Refresh()
 }
