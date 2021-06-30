@@ -3,14 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"math"
-	"os"
 	"runtime"
 	"sync"
 
 	mandy "github.com/yarbelk/mandy/lib"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var COLORS [16]string = [...]string{
@@ -33,12 +30,14 @@ var COLORS [16]string = [...]string{
 }
 
 var (
-	xMin   *float64 = flag.Float64("xmin", -2.5, "Minimum on real axis")
-	xMax   *float64 = flag.Float64("xmax", 0.5, "Max on real axis")
-	yMin   *float64 = flag.Float64("ymin", -1.0, "Minimum on imaginary axis")
-	yMax   *float64 = flag.Float64("ymax", 1.0, "max on imaginary axis")
-	depth  *int64   = flag.Int64("depth", 32767, "max recursion depth, int32")
-	radius *float64 = flag.Float64("radius", 2.0, "radius to test for convergence")
+	xMin    *float64 = flag.Float64("xmin", -2.5, "Minimum on real axis")
+	xMax    *float64 = flag.Float64("xmax", 0.5, "Max on real axis")
+	yMin    *float64 = flag.Float64("ymin", -1.0, "Minimum on imaginary axis")
+	yMax    *float64 = flag.Float64("ymax", 1.0, "max on imaginary axis")
+	depth   *int64   = flag.Int64("depth", 32767, "max recursion depth, int32")
+	radius  *float64 = flag.Float64("radius", 2.0, "radius to test for convergence")
+	screenX *int64   = flag.Int64("w", 160, "width in characters. (cowsay defaults to 40 fyi, and -n fixes formating)")
+	screenY *int64   = flag.Int64("h", 60, "height in characters")
 )
 
 func getCharForVal(value int16) string {
@@ -90,18 +89,10 @@ func main() {
 	}
 
 	var windowLimits mandy.WindowLimits
-	screenX, screenY, err := terminal.GetSize(0)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
 
 	// make it nicer in size so your promts and borders don't mess with the output
-	screenX -= 10
-	screenY -= 10
-
 	windowLimits = mandy.NewWindowLimits(
-		int32(screenX), int32(screenY),
+		int32(*screenX), int32(*screenY),
 		*xMin, *xMax,
 		*yMin, *yMax,
 	)
