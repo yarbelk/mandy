@@ -24,12 +24,19 @@ type WindowLimits struct {
 	xStep, yStep float64
 }
 
+// NewWindowLimits is an ugly piece of code.  given your terminal size x, y
+// and your extent in the complext plane, xMin, xMax, yMin, yMax: what
+// are your steps and extents.
+// it should be memoized and behaviioural.  its not actually needed out side
+// of the 'lets render this' question.
 func NewWindowLimits(x, y int32, xMin, xMax, yMin, yMax float64) WindowLimits {
 	var xStep float64 = (xMax - xMin) / float64(x)
 	var yStep float64 = (yMax - yMin) / float64(y)
 	return WindowLimits{x, y, xMin, xMax, yMin, yMax, xStep, yStep}
 }
 
+// ProdWindowPoints breaks a window into single character output cells.
+// it, and all the 'window' stuff should be their own package.
 func ProdWindowPoints(windowLimit *WindowLimits, output chan WindowPoint) {
 	var re, im float64
 	var x, y int32
@@ -47,13 +54,16 @@ func Converges(mandyVal *complex128, radius float64) bool {
 	return (cmplx.Abs(*mandyVal) < radius)
 }
 
+// Mandelbrot is the actual mandlebrot calculation
 func Mandelbrot(z, c complex128) complex128 {
 	return cmplx.Pow(z, 2.0+0i) + c
 }
 
 // MandelbrotRecursionLimit returns what value the mandelbrot function
 // ceases to be convergent at in a radius.  It normalizes back to an
-// int16
+// int16.  some benchmarks show that using the complex128 is
+// not as performant as other approaches, but its easier to read and i like it.
+// Performance isn't a huge driver for this.
 func MandelbrotRecursionLimit(input complex128, limit int32, radius float64) int16 {
 	var i int32
 	var z, c complex128
@@ -69,7 +79,9 @@ func MandelbrotRecursionLimit(input complex128, limit int32, radius float64) int
 	return int16(f)
 }
 
-// Mandy is the entry to the
+// Mandy returns the convergence of a point and radius from the input channel
+// and by 'returns', i mean puts it into the output channel.  its designed
+// for being run in multiple go routines
 func Mandy(inputChan chan WindowPoint, outputChan chan PixelValue, limit int32, radius float64) {
 	for input := range inputChan {
 		outputChan <- PixelValue{

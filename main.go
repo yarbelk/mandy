@@ -52,6 +52,8 @@ func getCharForVal(value int16) string {
 	return fmt.Sprintf("%s*\033[0m", COLORS[i])
 }
 
+// This collects the results and prints it in one go; so it can take advantage of coprocessing and
+// multiple workers.  You don't get nice 'fill up the terminal line by line' any more though'
 func updateWindowCollector(limits mandy.WindowLimits, inputChan chan mandy.PixelValue, doneChan chan struct{}) {
 	cellCount := limits.X * limits.Y
 	cells := make([][]int16, limits.Y)
@@ -76,11 +78,13 @@ func updateWindowCollector(limits mandy.WindowLimits, inputChan chan mandy.Pixel
 }
 
 func main() {
-	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
-	var outputChan chan mandy.PixelValue = make(chan mandy.PixelValue)
 	flag.Parse()
 
-	// boundry checking for later
+	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
+	var outputChan chan mandy.PixelValue = make(chan mandy.PixelValue)
+	doneChan := make(chan struct{})
+
+	// boundry checking for later, because i truncate it to an int32
 	if *depth > math.MaxInt32 {
 		*depth = math.MaxInt32
 	}
@@ -108,7 +112,6 @@ func main() {
 			mandy.Mandy(inputChan, outputChan, int32(*depth), *radius)
 		}()
 	}
-	doneChan := make(chan struct{})
 	go updateWindowCollector(windowLimits, outputChan, doneChan)
 
 	<-doneChan
