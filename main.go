@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync"
 
-	mandy "github.com/yarbelk/mandy/lib"
+	"github.com/yarbelk/mandy/lib/term"
 )
 
 var COLORS [16]string = [...]string{
@@ -53,7 +53,7 @@ func getCharForVal(value int16) string {
 
 // This collects the results and prints it in one go; so it can take advantage of coprocessing and
 // multiple workers.  You don't get nice 'fill up the terminal line by line' any more though'
-func updateWindowCollector(limits mandy.WindowLimits, inputChan chan mandy.PixelValue, doneChan chan struct{}) {
+func updateWindowCollector(limits term.WindowLimits, inputChan chan term.ConverganceValue, doneChan chan struct{}) {
 	cellCount := limits.X * limits.Y
 	cells := make([][]int16, limits.Y)
 	for i := 0; int32(i) < limits.Y; i++ {
@@ -79,8 +79,8 @@ func updateWindowCollector(limits mandy.WindowLimits, inputChan chan mandy.Pixel
 func main() {
 	flag.Parse()
 
-	var inputChan chan mandy.WindowPoint = make(chan mandy.WindowPoint)
-	var outputChan chan mandy.PixelValue = make(chan mandy.PixelValue)
+	var inputChan chan term.WindowPoint = make(chan term.WindowPoint)
+	var outputChan chan term.ConverganceValue = make(chan term.ConverganceValue)
 	doneChan := make(chan struct{})
 
 	// boundry checking for later, because i truncate it to an int32
@@ -88,23 +88,20 @@ func main() {
 		*depth = math.MaxInt32
 	}
 
-	var windowLimits mandy.WindowLimits
-
-	// make it nicer in size so your promts and borders don't mess with the output
-	windowLimits = mandy.NewWindowLimits(
+	windowLimits := term.NewWindowLimits(
 		int32(*screenX), int32(*screenY),
 		*xMin, *xMax,
 		*yMin, *yMax,
 	)
 
-	go mandy.ProdWindowPoints(&windowLimits, inputChan)
+	go term.ProdWindowPoints(&windowLimits, inputChan)
 
 	wg := sync.WaitGroup{}
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			mandy.Mandy(inputChan, outputChan, int32(*depth), *radius)
+			term.Mandy(inputChan, outputChan, int32(*depth), *radius)
 		}()
 	}
 	go updateWindowCollector(windowLimits, outputChan, doneChan)
