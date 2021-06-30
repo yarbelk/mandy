@@ -18,7 +18,7 @@ type PixelValue struct {
 // WindowLimits are the terminal window extents and steps. Fails at
 // the 'useful zero value' right now
 type WindowLimits struct {
-	x, y         int32
+	X, Y         int32
 	xMin, xMax   float64
 	yMin, yMax   float64
 	xStep, yStep float64
@@ -33,8 +33,8 @@ func NewWindowLimits(x, y int32, xMin, xMax, yMin, yMax float64) WindowLimits {
 func ProdWindowPoints(windowLimit *WindowLimits, output chan WindowPoint) {
 	var re, im float64
 	var x, y int32
-	for y = 0; y < windowLimit.y; y++ {
-		for x = 0; x < windowLimit.x; x++ {
+	for y = 0; y < windowLimit.Y; y++ {
+		for x = 0; x < windowLimit.X; x++ {
 			re = windowLimit.xMin + float64(x)*windowLimit.xStep
 			im = windowLimit.yMax - float64(y)*windowLimit.yStep
 			output <- WindowPoint{X: int(x), Y: int(y), Point: complex(re, im)}
@@ -78,5 +78,4 @@ func Mandy(inputChan chan WindowPoint, outputChan chan PixelValue, limit int32, 
 			Value: MandelbrotRecursionLimit(input.Point, limit, radius),
 		}
 	}
-	close(outputChan)
 }

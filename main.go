@@ -6,6 +6,8 @@ import (
 	"log"
 	"math"
 	"os"
+	"runtime"
+	"sync"
 
 	mandy "github.com/yarbelk/mandy/lib"
 	"golang.org/x/crypto/ssh/terminal"
@@ -50,18 +52,26 @@ func getCharForVal(value int16) string {
 	return fmt.Sprintf("%s*\033[0m", COLORS[i])
 }
 
-func updateWindow(inputChan chan mandy.PixelValue, doneChan chan bool) {
-	var lasty int = 0
-	for input := range inputChan {
-		if lasty != input.Y {
-			fmt.Println("")
-		}
-		fmt.Printf("%s", getCharForVal(input.Value))
-		lasty = input.Y
+func updateWindowCollector(limits mandy.WindowLimits, inputChan chan mandy.PixelValue, doneChan chan struct{}) {
+	cellCount := limits.X * limits.Y
+	cells := make([][]int16, limits.Y)
+	for i := 0; int32(i) < limits.Y; i++ {
+		cells[i] = make([]int16, limits.X)
 	}
-	fmt.Println("")
-
-	doneChan <- true
+	for cell := range inputChan {
+		cells[cell.Y][cell.X] = cell.Value
+		cellCount--
+		if cellCount == 0 {
+			break
+		}
+	}
+	for _, row := range cells {
+		for _, cell := range row {
+			fmt.Printf("%s", getCharForVal(cell))
+		}
+		fmt.Printf("\n")
+	}
+	doneChan <- struct{}{}
 	close(doneChan)
 }
 
@@ -90,9 +100,18 @@ func main() {
 
 	go mandy.ProdWindowPoints(&windowLimits, inputChan)
 
-	go mandy.Mandy(inputChan, outputChan, int32(*depth), *radius)
-	doneChan := make(chan bool)
-	go updateWindow(outputChan, doneChan)
+	wg := sync.WaitGroup{}
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			mandy.Mandy(inputChan, outputChan, int32(*depth), *radius)
+		}()
+	}
+	doneChan := make(chan struct{})
+	go updateWindowCollector(windowLimits, outputChan, doneChan)
 
 	<-doneChan
+	wg.Wait()
+	close(outputChan)
 }
