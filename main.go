@@ -96,6 +96,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// make it nicer in size so your promts and borders don't mess with the output
+	screenX -= 10
+	screenY -= 10
+
 	windowLimits = mandy.NewWindowLimits(
 		int32(screenX), int32(screenY),
 		*xMin, *xMax,
