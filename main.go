@@ -36,7 +36,7 @@ var (
 	yMax    *float64 = flag.Float64("ymax", 1.0, "max on imaginary axis")
 	depth   *int64   = flag.Int64("depth", 32767, "max recursion depth, int32")
 	radius  *float64 = flag.Float64("radius", 2.0, "radius to test for convergence")
-	screenX *int64   = flag.Int64("w", 160, "width in characters. (cowsay defaults to 40 fyi, and -n fixes formating)")
+	screenX *int64   = flag.Int64("w", 160, "width in characters. (cowsay defaults to 40 fyi, and -n 'fixes' formating)")
 	screenY *int64   = flag.Int64("h", 60, "height in characters")
 )
 
