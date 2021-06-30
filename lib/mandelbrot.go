@@ -15,6 +15,8 @@ type PixelValue struct {
 	Value int16
 }
 
+// WindowLimits are the terminal window extents and steps. Fails at
+// the 'useful zero value' right now
 type WindowLimits struct {
 	x, y         int32
 	xMin, xMax   float64

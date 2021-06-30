@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math"
+	"os"
 
 	mandy "github.com/yarbelk/mandy/lib"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var COLORS [16]string = [...]string{
@@ -73,7 +76,11 @@ func main() {
 	}
 
 	var windowLimits mandy.WindowLimits
-	screenY, screenX := 60, 160
+	screenX, screenY, err := terminal.GetSize(0)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
 
 	windowLimits = mandy.NewWindowLimits(
 		int32(screenX), int32(screenY),
